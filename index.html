@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="LEITZ Flow - personal finance and client tracker for freelance designers.">
+  <meta name="theme-color" content="#00fa9a">
+  <meta name="color-scheme" content="dark">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="format-detection" content="telephone=no">
+  <title>LEITZ Flow</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-bg"></div>
+
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand-card">
+        <div class="brand-mark">L</div>
+        <div>
+          <p class="eyebrow">LEITZ FLOW</p>
+          <h1>Деньги, заказы и клиенты без хаоса</h1>
+          <p class="muted-text">Личный кабинет для дизайнера на фрилансе с учетом поступлений, заказов, оплат и аналитики.</p>
+        </div>
+      </div>
+
+      <nav class="section-tabs" id="sectionTabsDesktop">
+        <button class="section-tab is-active" data-section="overview" type="button">
+          <strong>Обзор</strong>
+          <span>Главная картина по деньгам</span>
+        </button>
+        <button class="section-tab" data-section="income" type="button">
+          <strong>Журнал</strong>
+          <span>Заказы и деньги по дням</span>
+        </button>
+        <button class="section-tab" data-section="receivables" type="button">
+          <strong>Клиенты</strong>
+          <span>Неоплаченные заказы</span>
+        </button>
+        <button class="section-tab" data-section="analytics" type="button">
+          <strong>Аналитика</strong>
+          <span>Сравнение периодов и год</span>
+        </button>
+      </nav>
+
+      <section class="side-card">
+        <p class="eyebrow">Выбранный период</p>
+        <div class="side-value" id="sidebarIncome">0 руб</div>
+        <div class="side-period" id="sidebarLabel">Март 2026</div>
+      </section>
+
+      <section class="side-card tools-card">
+        <p class="eyebrow">Данные</p>
+        <div class="side-actions">
+          <button id="exportJsonBtn" class="ghost-btn" type="button">Экспорт JSON</button>
+          <button id="exportCsvBtn" class="ghost-btn" type="button">Экспорт CSV</button>
+          <button id="importBtn" class="ghost-btn" type="button">Импорт</button>
+          <button id="securityBtn" class="ghost-btn" type="button">Безопасность</button>
+          <button id="seedDemoBtn" class="primary-btn" type="button">Демо-данные</button>
+          <input id="importInput" type="file" accept="application/json" hidden>
+        </div>
+        <p class="storage-note">Данные хранятся локально в этом браузере. Для переноса на другое устройство используй экспорт и импорт.</p>
+      </section>
+    </aside>
+
+    <div class="main-area">
+      <header class="topbar">
+        <div class="view-tabs" id="viewTabs">
+          <button class="view-tab is-active" data-view="month" type="button">Месяц</button>
+          <button class="view-tab" data-view="range" type="button">Период</button>
+          <button class="view-tab" data-view="year" type="button">Год</button>
+        </div>
+
+        <div class="filters-panel">
+          <label class="control" id="singleMonthControl">
+            <span>Месяц</span>
+            <input id="monthFilter" type="month">
+          </label>
+          <label class="control hidden" id="rangeStartControl">
+            <span>От</span>
+            <input id="rangeStart" type="month">
+          </label>
+          <label class="control hidden" id="rangeEndControl">
+            <span>До</span>
+            <input id="rangeEnd" type="month">
+          </label>
+          <label class="control hidden" id="yearControl">
+            <span>Год</span>
+            <select id="yearFilter"></select>
+          </label>
+        </div>
+      </header>
+
+      <main class="content-grid">
+        <section class="panel hero-panel app-section" data-section="overview">
+          <div class="hero-copy">
+            <p class="eyebrow">Текущий период</p>
+            <h2 id="heroIncome">0 руб</h2>
+            <p class="hero-caption" id="heroCaption">Поступило денег за выбранный месяц</p>
+            <div class="hero-meta">
+              <span class="pill" id="selectionLabel">Март 2026</span>
+              <span class="pill accent-pill" id="heroTrend">0%</span>
+            </div>
+          </div>
+
+          <div class="goal-card">
+            <p class="eyebrow">Финансовая цель</p>
+            <div class="goal-amount" id="goalAmount">0 руб</div>
+            <div class="goal-meta" id="goalMeta">Цель не задана</div>
+            <div class="progress-track">
+              <div class="progress-fill" id="goalProgress"></div>
+            </div>
+            <button id="openGoalBtn" class="ghost-btn small" type="button">Изменить цель</button>
+          </div>
+        </section>
+
+        <section class="panel chart-panel app-section" data-section="overview">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">Динамика</p>
+              <h3>Поступления по дням</h3>
+              <p class="chart-note" id="heroBarsMeta">Показываем только те дни, когда действительно пришли деньги.</p>
+            </div>
+          </div>
+          <div id="heroBars" class="hero-bars"></div>
+        </section>
+
+        <section class="panel stats-panel app-section" data-section="overview">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">Показатели</p>
+              <h3>Быстрая сводка</h3>
+            </div>
+          </div>
+          <div class="stats-grid">
+            <article class="stat-card">
+              <span>Заказы</span>
+              <strong id="ordersCountMetric">0</strong>
+            </article>
+            <article class="stat-card">
+              <span>Среднее поступление</span>
+              <strong id="averageDayMetric">0 руб</strong>
+            </article>
+            <article class="stat-card">
+              <span>Ожидается оплат</span>
+              <strong id="pendingDebtsMetric">0 руб</strong>
+            </article>
+            <article class="stat-card">
+              <span>Открытых клиентов</span>
+              <strong id="openDebtorsMetric">0</strong>
+            </article>
+            <article class="stat-card">
+              <span>Лучший день</span>
+              <strong id="bestDayMetric">Нет</strong>
+            </article>
+            <article class="stat-card">
+              <span>Годовой доход</span>
+              <strong id="yearIncomeMetric">0 руб</strong>
+            </article>
+          </div>
+        </section>
+
+        <section class="panel quick-panel app-section" data-section="overview">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">Быстрые действия</p>
+              <h3>Самые частые сценарии</h3>
+            </div>
+          </div>
+          <div class="quick-grid">
+            <button class="quick-card" data-section-jump="income" type="button">
+              <span class="quick-icon">+</span>
+              <strong>Записать день</strong>
+              <span>Отметить заказы, деньги или всё вместе</span>
+            </button>
+            <button class="quick-card" data-section-jump="receivables" type="button">
+              <span class="quick-icon">◎</span>
+              <strong>Добавить заказ</strong>
+              <span>Привязать новый заказ к клиенту</span>
+            </button>
+            <button class="quick-card" data-section-jump="analytics" type="button">
+              <span class="quick-icon">⌁</span>
+              <strong>Открыть аналитику</strong>
+              <span>Сравнить периоды и посмотреть год</span>
+            </button>
+          </div>
+        </section>
+
+        <section class="panel focus-panel app-section" data-section="overview">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">Фокус</p>
+              <h3>Что важно сейчас</h3>
+            </div>
+          </div>
+          <div id="focusList" class="stack-grid"></div>
+        </section>
+
+        <section class="panel form-panel app-section hidden-section" data-section="income">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">Журнал дня</p>
+              <h3>Записать день</h3>
+            </div>
+          </div>
+          <form id="incomeForm" class="stack-form">
+            <p class="form-note">Можно указать только заказы, только поступление денег или оба поля вместе.</p>
+            <label>
+              <span>Дата</span>
+              <input name="date" type="date" required>
+            </label>
+            <label>
+              <span>Сделано заказов за день</span>
+              <input name="ordersCount" type="number" min="0" step="1" value="0">
+            </label>
+            <label>
+              <span>Поступило денег за день</span>
+              <input name="amount" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Можно оставить пустым">
+            </label>
+            <label>
+              <span>Комментарий</span>
+              <input name="note" type="text" placeholder="Например: сделал две афиши или пришла доплата по старому проекту">
+            </label>
+            <button class="primary-btn" type="submit">Сохранить запись</button>
+          </form>
+        </section>
+
+        <section class="panel list-panel app-section hidden-section" data-section="income">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">История</p>
+              <h3>Журнал по дням</h3>
+            </div>
+          </div>
+          <div class="search-row">
+            <input id="entrySearch" type="search" placeholder="Поиск по дате, комментарию или сумме">
+          </div>
+          <div id="daysList" class="list-grid"></div>
+        </section>
+
+        <section class="panel form-panel app-section hidden-section" data-section="receivables">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">Новый заказ</p>
+              <h3>Добавить заказ клиента</h3>
+            </div>
+          </div>
+          <form id="debtorForm" class="stack-form">
+            <p class="form-note">Если клиент уже есть, просто выбери его из списка и добавь новый заказ.</p>
+            <label>
+              <span>Выбрать существующего клиента</span>
+              <select id="clientSelect">
+                <option value="">Новый клиент</option>
+              </select>
+            </label>
+            <label>
+              <span>Клиент</span>
+              <input name="client" type="text" list="clientSuggestions" placeholder="Например: клуб ONYX" required>
+            </label>
+            <datalist id="clientSuggestions"></datalist>
+            <label>
+              <span>За какой заказ должен</span>
+              <input name="title" type="text" placeholder="Например: афиша вечеринки «Старая кассета»" required>
+            </label>
+            <label>
+              <span>Дедлайн</span>
+              <input name="deadline" type="date" required>
+            </label>
+            <label>
+              <span>Сумма по заказу</span>
+              <input name="total" type="number" min="0" step="0.01" inputmode="decimal" required>
+            </label>
+            <button class="primary-btn" type="submit">Добавить в контроль</button>
+          </form>
+        </section>
+
+        <section class="panel list-panel app-section hidden-section" data-section="receivables">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">Клиенты</p>
+              <h3>Клиенты и неоплаченные заказы</h3>
+            </div>
+          </div>
+          <div class="search-row">
+            <input id="debtorSearch" type="search" placeholder="Поиск по клиенту, заказу или сумме">
+          </div>
+          <div id="debtorsList" class="list-grid"></div>
+        </section>
+
+        <section class="panel compare-panel app-section hidden-section" data-section="analytics">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">Сравнение периодов</p>
+              <h3>Текущий период и предыдущий</h3>
+            </div>
+            <span class="muted-text" id="comparisonCaption">Нет данных</span>
+          </div>
+          <div id="compareChart" class="compare-chart"></div>
+        </section>
+
+        <section class="panel year-panel app-section hidden-section" data-section="analytics">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">Годовой обзор</p>
+              <h3>Доход по месяцам</h3>
+            </div>
+            <span class="muted-text" id="yearTotalMetric">0 руб</span>
+          </div>
+          <div id="yearLineChart" class="year-line-chart"></div>
+        </section>
+
+        <section class="panel analytics-panel app-section hidden-section" data-section="analytics">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">Итоги</p>
+              <h3>Выводы и ориентиры</h3>
+            </div>
+          </div>
+          <div class="stats-grid analytics-stats">
+            <article class="stat-card">
+              <span>Доход за год</span>
+              <strong id="yearIncomeMetricAnalytics">0 руб</strong>
+            </article>
+            <article class="stat-card">
+              <span>Заказов за год</span>
+              <strong id="yearOrdersMetric">0</strong>
+            </article>
+            <article class="stat-card">
+              <span>Активных месяцев</span>
+              <strong id="activeMonthsMetric">0</strong>
+            </article>
+            <article class="stat-card">
+              <span>Средний месяц</span>
+              <strong id="averageMonthMetric">0 руб</strong>
+            </article>
+          </div>
+          <div id="insightGrid" class="stack-grid"></div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <section id="lockScreen" class="lock-screen">
+    <div class="lock-card">
+      <div class="lock-brand">
+        <div class="brand-mark">L</div>
+        <div>
+          <p class="eyebrow" id="lockModeLabel">Безопасность</p>
+          <h2 id="lockTitle">Вход в приложение</h2>
+          <p class="muted-text" id="lockText">Введи PIN-код из 4 цифр, чтобы открыть приложение.</p>
+        </div>
+      </div>
+
+      <form id="lockForm" class="stack-form">
+        <label>
+          <span>PIN-код</span>
+          <input id="lockPinInput" name="pin" class="pin-input" type="password" inputmode="numeric" maxlength="4" pattern="[0-9]{4}" placeholder="0000" autocomplete="one-time-code" required>
+        </label>
+        <label id="lockPinConfirmWrap" class="hidden">
+          <span>Повтори PIN-код</span>
+          <input id="lockPinConfirmInput" name="pinConfirm" class="pin-input" type="password" inputmode="numeric" maxlength="4" pattern="[0-9]{4}" placeholder="0000" required>
+        </label>
+        <p class="lock-error hidden" id="lockError"></p>
+        <div class="lock-actions">
+          <button id="lockSubmitBtn" class="primary-btn" type="submit">Войти</button>
+          <button id="biometricUnlockBtn" class="ghost-btn hidden" type="button">Face ID / Touch ID</button>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <nav class="mobile-nav" id="sectionTabsMobile">
+    <button class="nav-item is-active" data-section="overview" type="button">
+      <span>⌂</span>
+      <span>Обзор</span>
+    </button>
+    <button class="nav-item" data-section="income" type="button">
+      <span>＋</span>
+      <span>Журнал</span>
+    </button>
+    <button class="nav-item" data-section="receivables" type="button">
+      <span>◎</span>
+      <span>Клиенты</span>
+    </button>
+    <button class="nav-item" data-section="analytics" type="button">
+      <span>⌁</span>
+      <span>Аналитика</span>
+    </button>
+  </nav>
+
+  <dialog id="goalDialog" class="modal">
+    <form id="goalForm" class="stack-form" method="dialog">
+      <div class="panel-head">
+        <div>
+          <p class="eyebrow">Цель</p>
+          <h3>Установить финансовую цель</h3>
+        </div>
+      </div>
+      <input type="hidden" name="goalKey">
+      <label>
+        <span>Сумма цели</span>
+        <input name="goalAmount" type="number" min="0" step="0.01" inputmode="decimal" required>
+      </label>
+      <div class="modal-actions">
+        <button class="ghost-btn" data-close-dialog="goalDialog" type="button">Отмена</button>
+        <button class="primary-btn" type="submit">Сохранить цель</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="paymentDialog" class="modal">
+    <form id="paymentForm" class="stack-form" method="dialog">
+      <div class="panel-head">
+        <div>
+          <p class="eyebrow">Оплата</p>
+          <h3 id="paymentDialogTitle">Записать поступление</h3>
+        </div>
+      </div>
+      <input type="hidden" name="debtorId">
+      <label>
+        <span>Дата поступления</span>
+        <input name="paymentDate" type="date" required>
+      </label>
+      <label>
+        <span>Сумма</span>
+        <input name="paymentAmount" type="number" min="0" step="0.01" inputmode="decimal" required>
+      </label>
+      <label>
+        <span>Количество заказов в этот день</span>
+        <select name="ordersCount">
+          <option value="0">0</option>
+          <option value="1">1</option>
+          <option value="2">2</option>
+          <option value="3">3</option>
+          <option value="4">4</option>
+        </select>
+      </label>
+      <label>
+        <span>Комментарий</span>
+        <input name="paymentNote" type="text" placeholder="Например: частичная оплата или полная оплата">
+      </label>
+      <div class="modal-actions">
+        <button class="ghost-btn" data-close-dialog="paymentDialog" type="button">Отмена</button>
+        <button class="primary-btn" type="submit">Зачесть в журнал</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="incomeEditDialog" class="modal">
+    <form id="incomeEditForm" class="stack-form" method="dialog">
+      <div class="panel-head">
+        <div>
+          <p class="eyebrow">Редактирование</p>
+          <h3>Изменить запись дня</h3>
+        </div>
+      </div>
+      <input type="hidden" name="entryId">
+      <label>
+        <span>Дата</span>
+        <input name="date" type="date" required>
+      </label>
+      <label>
+        <span>Сделано заказов за день</span>
+        <input name="ordersCount" type="number" min="0" step="1">
+      </label>
+      <label>
+        <span>Поступило денег за день</span>
+        <input name="amount" type="number" min="0" step="0.01" inputmode="decimal">
+      </label>
+      <label>
+        <span>Комментарий</span>
+        <input name="note" type="text">
+      </label>
+      <div class="modal-actions">
+        <button class="ghost-btn" data-close-dialog="incomeEditDialog" type="button">Отмена</button>
+        <button class="primary-btn" type="submit">Сохранить</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="debtorEditDialog" class="modal">
+    <form id="debtorEditForm" class="stack-form" method="dialog">
+      <div class="panel-head">
+        <div>
+          <p class="eyebrow">Редактирование</p>
+          <h3>Изменить заказ клиента</h3>
+        </div>
+      </div>
+      <input type="hidden" name="debtorId">
+      <label>
+        <span>Клиент</span>
+        <input name="client" type="text" list="clientSuggestions" required>
+      </label>
+      <label>
+        <span>Что было сделано</span>
+        <input name="title" type="text" required>
+      </label>
+      <label>
+        <span>Дедлайн</span>
+        <input name="deadline" type="date" required>
+      </label>
+      <label>
+        <span>Полная сумма</span>
+        <input name="total" type="number" min="0" step="0.01" inputmode="decimal" required>
+      </label>
+      <div class="modal-actions">
+        <button class="ghost-btn" data-close-dialog="debtorEditDialog" type="button">Отмена</button>
+        <button class="primary-btn" type="submit">Сохранить</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="securityDialog" class="modal">
+    <form id="securityForm" class="stack-form" method="dialog">
+      <div class="panel-head">
+        <div>
+          <p class="eyebrow">Безопасность</p>
+          <h3>PIN и биометрия</h3>
+        </div>
+      </div>
+      <p class="form-note">Для входа используется локальная защита этого устройства. PIN хранится в безопасном виде, а биометрия включается только там, где платформа ее поддерживает.</p>
+      <label id="securityCurrentPinWrap">
+        <span>Текущий PIN-код</span>
+        <input id="securityCurrentPin" name="currentPin" class="pin-input" type="password" inputmode="numeric" maxlength="4" pattern="[0-9]{4}" placeholder="0000">
+      </label>
+      <label>
+        <span>Новый PIN-код</span>
+        <input id="securityNewPin" name="newPin" class="pin-input" type="password" inputmode="numeric" maxlength="4" pattern="[0-9]{4}" placeholder="0000" required>
+      </label>
+      <label>
+        <span>Повтори новый PIN-код</span>
+        <input id="securityConfirmPin" name="confirmPin" class="pin-input" type="password" inputmode="numeric" maxlength="4" pattern="[0-9]{4}" placeholder="0000" required>
+      </label>
+      <div class="security-panel">
+        <div>
+          <strong>Быстрый вход</strong>
+          <p class="muted-text" id="biometricStatusText">Биометрия пока не включена.</p>
+        </div>
+        <button id="enableBiometricBtn" class="ghost-btn" type="button">Включить Face ID / Touch ID</button>
+      </div>
+      <p class="lock-error hidden" id="securityError"></p>
+      <div class="modal-actions">
+        <button id="lockNowBtn" class="ghost-btn" type="button">Заблокировать сейчас</button>
+        <button class="ghost-btn" data-close-dialog="securityDialog" type="button">Отмена</button>
+        <button class="primary-btn" type="submit">Сохранить</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="app.js"></script>
+</body>
+</html>

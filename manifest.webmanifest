@@ -1,0 +1,19 @@
+{
+  "name": "LEITZ Flow",
+  "short_name": "LEITZ",
+  "description": "Income, orders, clients, and analytics for a freelance designer.",
+  "lang": "ru",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#06110d",
+  "theme_color": "#00fa9a",
+  "icons": [
+    {
+      "src": "favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

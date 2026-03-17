@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
+  <title id="title">LEITZ Flow</title>
+  <desc id="desc">Dark mint icon for LEITZ Flow.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0%" x2="100%" y1="0%" y2="100%">
+      <stop offset="0%" stop-color="#0d1713"/>
+      <stop offset="55%" stop-color="#09100d"/>
+      <stop offset="100%" stop-color="#030605"/>
+    </linearGradient>
+    <linearGradient id="mint" x1="20%" x2="80%" y1="10%" y2="100%">
+      <stop offset="0%" stop-color="#87ffd0"/>
+      <stop offset="45%" stop-color="#00fa9a"/>
+      <stop offset="100%" stop-color="#00a966"/>
+    </linearGradient>
+    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="10" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <rect width="256" height="256" rx="64" fill="url(#bg)"/>
+  <circle cx="128" cy="128" r="82" fill="none" stroke="#ffffff" stroke-opacity="0.08"/>
+  <path d="M84 68h28v92h70v28H84z" fill="url(#mint)" filter="url(#glow)"/>
+  <path d="M164 82c18 0 32 12 32 28 0 11-7 20-17 25l-7-16c5-3 8-7 8-11 0-7-7-12-16-12-9 0-16 5-16 12 0 5 4 10 11 13l-8 15c-13-6-21-17-21-29 0-15 15-25 34-25z" fill="#d8fff0" opacity="0.82"/>
+  <circle cx="192" cy="190" r="10" fill="#00fa9a"/>
+  <path d="M56 196c22-18 44-28 66-28 18 0 34 5 48 14" fill="none" stroke="#00fa9a" stroke-linecap="round" stroke-width="10" opacity="0.45"/>
+</svg>
