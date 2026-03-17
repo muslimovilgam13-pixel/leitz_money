@@ -13,7 +13,14 @@
   --warning: #ffd479;
   --danger: #ff7f96;
   --shadow: 0 24px 70px rgba(0, 0, 0, 0.4);
-  font-family: "Bahnschrift", "Trebuchet MS", "Segoe UI", sans-serif;
+  --radius-xl: 30px;
+  --radius-lg: 24px;
+  --radius-md: 18px;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  font-family: "SF Pro Display", "Avenir Next", "Segoe UI Variable Display", "Bahnschrift", sans-serif;
 }
 
 * {
@@ -22,6 +29,7 @@
 
 html {
   scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
 }
 
 body.app-locked {
@@ -33,10 +41,13 @@ body {
   min-height: 100vh;
   color: var(--text);
   background:
-    radial-gradient(circle at top center, rgba(0, 250, 154, 0.16), transparent 25%),
-    radial-gradient(circle at 10% 18%, rgba(0, 250, 154, 0.07), transparent 14%),
-    linear-gradient(180deg, #09110d 0%, #050807 42%, #040605 100%);
+    radial-gradient(circle at top center, rgba(0, 250, 154, 0.18), transparent 24%),
+    radial-gradient(circle at 12% 14%, rgba(0, 250, 154, 0.08), transparent 16%),
+    radial-gradient(circle at 88% 10%, rgba(255, 255, 255, 0.06), transparent 18%),
+    linear-gradient(180deg, #09110d 0%, #050807 42%, #030504 100%);
   overflow-x: hidden;
+  padding-left: var(--safe-left);
+  padding-right: var(--safe-right);
 }
 
 .app-bg {
@@ -47,14 +58,14 @@ body {
     linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
     linear-gradient(90deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px);
   background-size: 28px 28px;
-  opacity: 0.24;
+  opacity: 0.18;
 }
 
 .app-shell {
   position: relative;
-  width: min(1480px, calc(100% - 24px));
+  width: min(1480px, calc(100% - 28px));
   margin: 0 auto;
-  padding: 18px 0 110px;
+  padding: calc(18px + var(--safe-top)) 0 calc(126px + var(--safe-bottom));
   display: grid;
   grid-template-columns: 320px minmax(0, 1fr);
   gap: 18px;
@@ -68,7 +79,7 @@ body {
 
 .sidebar {
   position: sticky;
-  top: 18px;
+  top: calc(18px + var(--safe-top));
   align-self: start;
 }
 
@@ -79,10 +90,12 @@ body {
   position: relative;
   overflow: hidden;
   border: 1px solid var(--line);
-  border-radius: 28px;
-  background: linear-gradient(180deg, var(--panel), var(--panel-strong));
-  box-shadow: var(--shadow);
-  backdrop-filter: blur(18px);
+  border-radius: var(--radius-xl);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.028), rgba(255, 255, 255, 0.01)),
+    linear-gradient(180deg, var(--panel), var(--panel-strong));
+  box-shadow: var(--shadow), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(22px);
 }
 
 .brand-card::before,
@@ -95,6 +108,17 @@ body {
   width: 170px;
   height: 170px;
   background: radial-gradient(circle, var(--accent-glow), transparent 70%);
+  pointer-events: none;
+}
+
+.brand-card::after,
+.side-card::after,
+.panel::after {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  border-radius: inherit;
+  border: 1px solid rgba(255, 255, 255, 0.03);
   pointer-events: none;
 }
 
@@ -142,6 +166,7 @@ p {
 h1 {
   font-size: clamp(28px, 3vw, 42px);
   line-height: 0.98;
+  letter-spacing: -0.04em;
 }
 
 .muted-text,
@@ -199,6 +224,7 @@ h1 {
   font: inherit;
   border: 0;
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .section-tabs {
@@ -208,7 +234,7 @@ h1 {
 .section-tab {
   padding: 16px 18px;
   text-align: left;
-  border-radius: 22px;
+  border-radius: var(--radius-lg);
   border: 1px solid rgba(255, 255, 255, 0.06);
   background: rgba(255, 255, 255, 0.03);
   color: var(--text);
@@ -265,6 +291,7 @@ h1 {
   background: transparent;
   color: var(--muted);
   transition: 160ms ease;
+  min-height: 48px;
 }
 
 .view-tab.is-active {
@@ -289,7 +316,7 @@ h1 {
   z-index: 120;
   display: grid;
   place-items: center;
-  padding: 18px;
+  padding: calc(18px + var(--safe-top)) 18px calc(18px + var(--safe-bottom));
   background: rgba(2, 6, 5, 0.82);
   backdrop-filter: blur(20px);
 }
@@ -364,10 +391,16 @@ input,
 select {
   width: 100%;
   padding: 14px 16px;
+  min-height: 50px;
   border-radius: 16px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(255, 255, 255, 0.04);
   color: var(--text);
+  font-size: 16px;
+}
+
+input::placeholder {
+  color: rgba(239, 255, 248, 0.42);
 }
 
 input:focus,
@@ -380,6 +413,7 @@ select:focus {
 .primary-btn,
 .chip-btn {
   padding: 13px 16px;
+  min-height: 48px;
   border-radius: 16px;
   transition: transform 160ms ease, background 160ms ease, border-color 160ms ease;
 }
@@ -478,7 +512,7 @@ select:focus {
   gap: 12px;
   align-content: start;
   padding: 18px;
-  border-radius: 24px;
+  border-radius: 26px;
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.03));
   border: 1px solid rgba(255, 255, 255, 0.05);
 }
@@ -959,7 +993,7 @@ select:focus {
 .mobile-nav {
   position: fixed;
   left: 50%;
-  bottom: 14px;
+  bottom: calc(12px + var(--safe-bottom));
   transform: translateX(-50%);
   width: min(760px, calc(100% - 24px));
   display: none;
@@ -968,7 +1002,7 @@ select:focus {
   padding: 10px;
   border-radius: 24px;
   border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(7, 12, 10, 0.92);
+  background: linear-gradient(180deg, rgba(10, 16, 14, 0.92), rgba(6, 10, 8, 0.98));
   box-shadow: var(--shadow);
   backdrop-filter: blur(18px);
 }
@@ -977,6 +1011,7 @@ select:focus {
   display: grid;
   justify-items: center;
   gap: 6px;
+  min-height: 56px;
   padding: 10px 8px;
   border-radius: 18px;
   background: transparent;
@@ -1060,12 +1095,20 @@ select:focus {
 
 @media (max-width: 780px) {
   .app-shell {
-    width: min(100% - 14px, 1480px);
-    padding-bottom: 96px;
+    width: min(430px, calc(100% - 16px));
+    padding-top: calc(10px + var(--safe-top));
+    padding-bottom: calc(112px + var(--safe-bottom));
+    gap: 14px;
   }
 
   .sidebar {
     grid-template-columns: 1fr;
+  }
+
+  .sidebar,
+  .main-area,
+  .content-grid {
+    gap: 14px;
   }
 
   .section-tabs {
@@ -1074,18 +1117,64 @@ select:focus {
 
   .mobile-nav {
     display: grid;
+    width: min(430px, calc(100% - 16px));
+    padding: 9px 10px calc(9px + var(--safe-bottom) * 0.32);
+    border-radius: 28px;
+    box-shadow: 0 26px 60px rgba(0, 0, 0, 0.52);
+  }
+
+  .brand-card,
+  .side-card,
+  .panel {
+    padding: 18px;
+    border-radius: 26px;
+  }
+
+  .brand-card {
+    grid-template-columns: 54px 1fr;
+    gap: 14px;
+  }
+
+  .brand-mark {
+    width: 54px;
+    height: 54px;
+    border-radius: 18px;
+    font-size: 26px;
+  }
+
+  .topbar {
+    position: sticky;
+    top: calc(8px + var(--safe-top));
+    z-index: 50;
+    padding: 12px;
+    border-radius: 24px;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    background: rgba(6, 10, 8, 0.8);
+    box-shadow: 0 20px 44px rgba(0, 0, 0, 0.34);
+    backdrop-filter: blur(20px);
+  }
+
+  .view-tabs {
+    min-width: 100%;
+    gap: 6px;
+  }
+
+  .view-tab {
+    font-size: 15px;
   }
 
   .hero-panel {
     grid-template-columns: 1fr;
+    gap: 16px;
   }
 
   .lock-card {
-    padding: 20px;
+    width: min(430px, calc(100vw - 16px));
+    padding: 22px 18px 20px;
+    border-radius: 32px;
   }
 
   .stats-grid,
-  .quick-grid,
   .analytics-stats,
   .filters-panel,
   .side-actions {
@@ -1107,7 +1196,179 @@ select:focus {
   }
 
   .day-summary-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    min-width: 0;
+  }
+
+  .tools-card .side-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .tools-card .primary-btn {
+    grid-column: 1 / -1;
+  }
+
+  .hero-copy h2 {
+    font-size: clamp(42px, 14vw, 56px);
+  }
+
+  .hero-caption {
+    max-width: 28ch;
+    line-height: 1.45;
+  }
+
+  .goal-card {
+    padding: 16px;
+    gap: 10px;
+  }
+
+  .goal-amount {
+    font-size: 30px;
+  }
+
+  .hero-bars {
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(40px, 1fr);
+    overflow-x: auto;
+    padding-bottom: 6px;
+    padding-right: 4px;
+    overscroll-behavior-x: contain;
+  }
+
+  .hero-bars::-webkit-scrollbar {
+    display: none;
+  }
+
+  .stats-grid,
+  .analytics-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .stat-card {
+    min-height: 108px;
+    padding: 15px;
+  }
+
+  .stat-card strong {
+    font-size: 22px;
+  }
+
+  .quick-grid {
     grid-template-columns: 1fr;
-    min-width: 100%;
+    gap: 12px;
+  }
+
+  .quick-card {
+    grid-template-columns: 52px 1fr;
+    gap: 4px 14px;
+    align-items: start;
+    padding: 16px;
+  }
+
+  .quick-card .quick-icon {
+    grid-row: span 2;
+  }
+
+  .quick-card strong,
+  .quick-card span:last-child {
+    grid-column: 2;
+  }
+
+  .stack-grid,
+  .list-grid,
+  .compare-chart,
+  .year-line-chart {
+    gap: 12px;
+  }
+
+  .list-item,
+  .client-order,
+  .compare-row {
+    padding: 15px;
+  }
+
+  .sub-entry-side {
+    min-width: 0;
+  }
+
+  .item-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .chip-btn {
+    justify-content: center;
+  }
+
+  .line-stage {
+    min-height: 220px;
+  }
+
+  .axis-month {
+    font-size: 11px;
+  }
+
+  .nav-item {
+    gap: 4px;
+    padding: 9px 6px 8px;
+    border-radius: 18px;
+    font-size: 11px;
+  }
+
+  .nav-item span:first-child {
+    font-size: 18px;
+    line-height: 1;
+  }
+
+  .modal[open] {
+    position: fixed;
+    left: 50%;
+    right: auto;
+    bottom: calc(6px + var(--safe-bottom));
+    transform: translateX(-50%);
+    margin: 0;
+    width: min(430px, calc(100vw - 12px));
+    max-height: calc(100dvh - var(--safe-top) - 12px);
+    overflow: auto;
+    padding: 20px 18px calc(22px + var(--safe-bottom));
+    border-radius: 30px;
+  }
+}
+
+@media (max-width: 430px) {
+  .app-bg {
+    background-size: 24px 24px;
+    opacity: 0.14;
+  }
+
+  .panel-head {
+    align-items: flex-start;
+  }
+
+  .hero-bars {
+    grid-auto-columns: 44px;
+  }
+
+  .stat-card strong,
+  .item-amount {
+    font-size: 20px;
+  }
+
+  .day-summary-stat strong {
+    font-size: 16px;
+  }
+
+  .chip-btn,
+  .ghost-btn,
+  .primary-btn {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+
+  .modal-actions {
+    display: grid;
+    grid-template-columns: 1fr;
   }
 }
