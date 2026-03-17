@@ -11,6 +11,7 @@ const initialState = {
   ui: {
     view: "month",
     section: "overview",
+    openClients: {},
   },
 };
 
@@ -28,6 +29,7 @@ const biometric = {
 };
 
 const refs = {
+  brandLauncher: document.getElementById("brandLauncher"),
   viewTabs: document.getElementById("viewTabs"),
   sectionTabsDesktop: document.getElementById("sectionTabsDesktop"),
   sectionTabsMobile: document.getElementById("sectionTabsMobile"),
@@ -65,6 +67,10 @@ const refs = {
   heroCaption: document.getElementById("heroCaption"),
   selectionLabel: document.getElementById("selectionLabel"),
   heroTrend: document.getElementById("heroTrend"),
+  overviewOrdersMetric: document.getElementById("overviewOrdersMetric"),
+  overviewIncomeDaysMetric: document.getElementById("overviewIncomeDaysMetric"),
+  overviewOpenClientsMetric: document.getElementById("overviewOpenClientsMetric"),
+  overviewPendingMetric: document.getElementById("overviewPendingMetric"),
   heroBars: document.getElementById("heroBars"),
   heroBarsMeta: document.getElementById("heroBarsMeta"),
   sidebarIncome: document.getElementById("sidebarIncome"),
@@ -73,6 +79,7 @@ const refs = {
   goalMeta: document.getElementById("goalMeta"),
   goalProgress: document.getElementById("goalProgress"),
   ordersCountMetric: document.getElementById("ordersCountMetric"),
+  workingDaysMetric: document.getElementById("workingDaysMetric"),
   averageDayMetric: document.getElementById("averageDayMetric"),
   pendingDebtsMetric: document.getElementById("pendingDebtsMetric"),
   openDebtorsMetric: document.getElementById("openDebtorsMetric"),
@@ -102,6 +109,7 @@ const refs = {
   lockSubmitBtn: document.getElementById("lockSubmitBtn"),
   biometricUnlockBtn: document.getElementById("biometricUnlockBtn"),
   securityDialog: document.getElementById("securityDialog"),
+  workspaceDialog: document.getElementById("workspaceDialog"),
   securityForm: document.getElementById("securityForm"),
   securityCurrentPinWrap: document.getElementById("securityCurrentPinWrap"),
   securityCurrentPin: document.getElementById("securityCurrentPin"),
@@ -130,6 +138,7 @@ function initializeDefaults() {
   refs.rangeStart.value = getRelativeMonth(anchorMonth, -2);
   refs.rangeEnd.value = anchorMonth;
   refs.incomeForm.date.value = formatDateForInput(realToday);
+  refs.debtorForm.completedDate.value = formatDateForInput(realToday);
   refs.debtorForm.deadline.value = formatDateForInput(realToday);
   refs.paymentForm.paymentDate.value = formatDateForInput(realToday);
   populateYearOptions(anchorYear);
@@ -140,6 +149,7 @@ function initializeDefaults() {
 }
 
 function bindEvents() {
+  refs.brandLauncher.addEventListener("click", openWorkspaceDialog);
   refs.viewTabs.addEventListener("click", handleViewTabClick);
   refs.sectionTabsDesktop.addEventListener("click", handleSectionClick);
   refs.sectionTabsMobile.addEventListener("click", handleSectionClick);
@@ -165,6 +175,7 @@ function bindEvents() {
   refs.lockNowBtn.addEventListener("click", handleLockNow);
   refs.daysList.addEventListener("click", handleIncomeListClick);
   refs.debtorsList.addEventListener("click", handleDebtorListClick);
+  refs.debtorsList.addEventListener("toggle", handleDebtorToggle, true);
   refs.exportJsonBtn.addEventListener("click", exportJson);
   refs.exportCsvBtn.addEventListener("click", exportCsvBundle);
   refs.importBtn.addEventListener("click", () => refs.importInput.click());
@@ -269,6 +280,10 @@ function renderHero(filter, metrics, goalData) {
   refs.selectionLabel.textContent = filter.label;
   refs.heroTrend.textContent = filter.trendLabel(metrics);
   refs.heroTrend.style.color = metrics.delta >= 0 ? "var(--accent)" : "var(--danger)";
+  refs.overviewOrdersMetric.textContent = String(metrics.totalOrders);
+  refs.overviewIncomeDaysMetric.textContent = String(metrics.incomeDays);
+  refs.overviewOpenClientsMetric.textContent = String(metrics.openDebtors);
+  refs.overviewPendingMetric.textContent = formatCurrency(metrics.pendingDebts);
   refs.sidebarIncome.textContent = formatCurrency(metrics.totalIncome);
   refs.sidebarLabel.textContent = filter.label;
   refs.goalAmount.textContent = goalData.target > 0 ? formatCurrency(goalData.target) : "Не задана";
@@ -306,7 +321,8 @@ function renderHero(filter, metrics, goalData) {
 
 function renderStats(sliceMetrics, yearMetrics) {
   refs.ordersCountMetric.textContent = String(sliceMetrics.totalOrders);
-  refs.averageDayMetric.textContent = formatCurrency(sliceMetrics.averagePerIncomeDay);
+  refs.workingDaysMetric.textContent = String(sliceMetrics.workingDays);
+  refs.averageDayMetric.textContent = formatCurrency(sliceMetrics.averagePerOrder);
   refs.pendingDebtsMetric.textContent = formatCurrency(sliceMetrics.pendingDebts);
   refs.openDebtorsMetric.textContent = String(sliceMetrics.openDebtors);
   refs.bestDayMetric.textContent = sliceMetrics.bestDay ? `${formatShortDate(sliceMetrics.bestDay.date)} · ${formatCurrency(sliceMetrics.bestDay.amount)}` : "Нет";
@@ -343,7 +359,7 @@ function renderCompare(filter, metrics) {
   const rows = [
     { label: "Доход", current: metrics.totalIncome, previous: metrics.previousIncome, format: formatCurrency },
     { label: "Заказы", current: metrics.totalOrders, previous: metrics.previousOrders, format: (value) => `${value}` },
-    { label: "Дней с записями", current: metrics.activeDays, previous: metrics.previousActiveDays, format: (value) => `${value}` },
+    { label: "Активных дней", current: metrics.activeDays, previous: metrics.previousActiveDays, format: (value) => `${value}` },
   ];
 
   for (const row of rows) {
@@ -443,25 +459,39 @@ function renderIncomeList(entries) {
         }
         return b.ordersCount - a.ordersCount;
       })
-      .map((entry) => `
-        <div class="sub-entry">
-          <div>
-            <strong>${getEntryKindLabel(entry)}</strong>
-            <p>${escapeHtml(entry.note || "Без комментария")}</p>
-            <div class="badge-row compact-badges">
-              <span class="badge">${entry.ordersCount > 0 ? formatOrderCount(entry.ordersCount) : "Без заказов"}</span>
-              <span class="badge ${entry.amount > 0 ? "good" : ""}">${entry.amount > 0 ? formatCurrency(entry.amount) : "Без поступления"}</span>
+      .map((entry) => {
+        const sourceBadge = entry.source === "debtor-order"
+          ? `<span class="badge good">Заказ пришел из карточки клиента</span>`
+          : entry.source === "debtor-payment"
+            ? `<span class="badge good">Оплата пришла от клиента</span>`
+            : "";
+        const actionMarkup = entry.source === "manual"
+          ? `
+            <button class="chip-btn" data-action="edit-income" data-id="${entry.id}" type="button">Изменить</button>
+            <button class="chip-btn danger" data-action="delete-income" data-id="${entry.id}" type="button">Удалить</button>
+          `
+          : entry.debtorId
+            ? `<button class="chip-btn" data-action="open-linked-debtor" data-id="${entry.id}" type="button">Открыть заказ</button>`
+            : "";
+
+        return `
+          <div class="sub-entry">
+            <div>
+              <strong>${getEntryKindLabel(entry)}</strong>
+              <p>${escapeHtml(entry.note || "Без комментария")}</p>
+              <div class="badge-row compact-badges">
+                <span class="badge">${entry.ordersCount > 0 ? formatOrderCount(entry.ordersCount) : "Без заказов"}</span>
+                <span class="badge ${entry.amount > 0 ? "good" : ""}">${entry.amount > 0 ? formatCurrency(entry.amount) : "Без поступления"}</span>
+                ${sourceBadge}
+              </div>
+            </div>
+            <div class="sub-entry-side">
+              <span>${entry.amount > 0 ? formatCurrency(entry.amount) : "0 ₽"}</span>
+              <div class="item-actions">${actionMarkup}</div>
             </div>
           </div>
-          <div class="sub-entry-side">
-            <span>${entry.amount > 0 ? formatCurrency(entry.amount) : "0 ₽"}</span>
-            <div class="item-actions">
-              <button class="chip-btn" data-action="edit-income" data-id="${entry.id}" type="button">Изменить</button>
-              <button class="chip-btn danger" data-action="delete-income" data-id="${entry.id}" type="button">Удалить</button>
-            </div>
-          </div>
-        </div>
-      `)
+        `;
+      })
       .join("");
 
     const dayCard = document.createElement("details");
@@ -488,11 +518,12 @@ function renderIncomeList(entries) {
           <span class="badge">${summary.entries.length} записей</span>
           <span class="badge">${summary.amount > 0 ? "Есть поступления" : "Без поступлений"}</span>
           <span class="badge ${summary.ordersCount > 0 ? "good" : "warn"}">${summary.ordersCount > 0 ? "Есть заказы" : "Без заказов"}</span>
-          <span class="badge ${summary.hasDebtorPayments ? "good" : "warn"}">${summary.hasDebtorPayments ? "Есть оплаты клиентов" : "Без оплат клиентов"}</span>
+          ${summary.hasDebtorOrders ? `<span class="badge good">Есть заказы клиентов</span>` : ""}
+          ${summary.hasDebtorPayments ? `<span class="badge good">Есть оплаты клиентов</span>` : ""}
         </div>
         <div class="item-footer">
-          <span class="meta-text">Если денег не было, можно просто зафиксировать количество заказов. И наоборот.</span>
-          <span class="toggle-hint">Открыть день</span>
+          <span class="meta-text">Журнал можно вести гибко: только заказы, только деньги или связку из заказа клиента и оплаты в разные дни.</span>
+          <span class="toggle-hint">Развернуть день</span>
         </div>
       </summary>
       <div class="sub-entry-list">${lines}</div>
@@ -508,7 +539,10 @@ function renderDebtorList(clients) {
     return;
   }
 
-  for (const client of clients) {
+  const forceOpen = Boolean(String(refs.debtorSearch.value || "").trim());
+  clients.forEach((client, index) => {
+    const clientKey = normalizeClientName(client.client);
+    const hasRememberedState = Object.prototype.hasOwnProperty.call(state.ui.openClients || {}, clientKey);
     const clientStatusClass = client.remaining <= 0 ? "good" : client.hasOverdue ? "danger" : "warn";
     const clientStatusText = client.remaining <= 0 ? "Все оплачено" : client.hasOverdue ? "Есть просрочка" : "Ждет оплату";
     const ordersMarkup = client.orders.map((debtor) => {
@@ -516,13 +550,13 @@ function renderDebtorList(clients) {
       const statusClass = remaining <= 0 ? "good" : debtor.deadline < formatDateForInput(new Date()) ? "danger" : "warn";
       const statusText = remaining <= 0 ? "Оплачено" : debtor.deadline < formatDateForInput(new Date()) ? "Просрочено" : "Ожидается";
       const progress = debtor.total ? Math.min((debtor.paid / debtor.total) * 100, 100) : 0;
-      const historyText = debtor.history.length ? debtor.history.slice(0, 2).map((item) => `${formatShortDate(item.date)} · ${formatCurrency(item.amount)}`).join(" / ") : "Оплат пока не было";
+      const historyText = debtor.history.length ? debtor.history.slice(0, 2).map((item) => `${formatShortDate(item.date)} · ${formatCurrency(item.amount)}`).join(" / ") : "Оплата еще не отмечена";
       return `
         <div class="client-order">
           <div class="item-row">
             <div>
               <div class="item-title">${escapeHtml(debtor.title)}</div>
-              <div class="meta-text">Дедлайн ${formatShortDate(debtor.deadline)}</div>
+              <div class="meta-text">Сделан ${formatShortDate(debtor.completedDate)} · оплата до ${formatShortDate(debtor.deadline)}</div>
             </div>
             <div class="item-amount">${formatCurrency(remaining)}</div>
           </div>
@@ -530,13 +564,14 @@ function renderDebtorList(clients) {
             <span class="badge ${statusClass}">${statusText}</span>
             <span class="badge">Заказ на ${formatCurrency(debtor.total)}</span>
             <span class="badge good">Уже оплачено ${formatCurrency(debtor.paid)}</span>
+            <span class="badge">В журнале ${formatShortDate(debtor.completedDate)}</span>
           </div>
           <div class="progress-track" style="margin-top:12px;"><div class="progress-fill" style="width:${progress}%"></div></div>
           <div class="item-footer">
             <span class="meta-text">${historyText}</span>
             <div class="item-actions">
-              ${remaining > 0 ? `<button class="chip-btn good" data-action="mark-paid-today" data-id="${debtor.id}" type="button">Оплачено сегодня</button>` : ""}
-              ${remaining > 0 ? `<button class="chip-btn warn" data-action="payment" data-id="${debtor.id}" type="button">Частичная оплата</button>` : ""}
+              ${remaining > 0 ? `<button class="chip-btn good" data-action="mark-paid-today" data-id="${debtor.id}" type="button">Оплатил сегодня</button>` : ""}
+              ${remaining > 0 ? `<button class="chip-btn warn" data-action="payment" data-id="${debtor.id}" type="button">Частично</button>` : ""}
               <button class="chip-btn" data-action="edit-debtor" data-id="${debtor.id}" type="button">Изменить</button>
               <button class="chip-btn danger" data-action="delete-debtor" data-id="${debtor.id}" type="button">Удалить</button>
             </div>
@@ -544,25 +579,44 @@ function renderDebtorList(clients) {
         </div>
       `;
     }).join("");
-    const article = document.createElement("article");
+    const article = document.createElement("details");
     article.className = "list-item client-group";
+    article.dataset.clientKey = clientKey;
+    article.open = forceOpen || (hasRememberedState ? Boolean(state.ui.openClients[clientKey]) : client.hasOverdue || index === 0);
     article.innerHTML = `
-      <div class="item-row">
-        <div>
-          <div class="item-title">${escapeHtml(client.client)}</div>
-          <div class="meta-text">${formatOrderCount(client.orders.length)} в ожидании оплаты</div>
+      <summary class="client-group-toggle">
+        <div class="item-row">
+          <div>
+            <div class="item-title">${escapeHtml(client.client)}</div>
+            <div class="meta-text">${formatOrderCount(client.orders.length)} в работе · осталось получить ${formatCurrency(client.remaining)}</div>
+          </div>
+          <div class="day-summary-stats client-summary-stats">
+            <div class="day-summary-stat">
+              <span>Заказов</span>
+              <strong>${client.orders.length}</strong>
+            </div>
+            <div class="day-summary-stat">
+              <span>Осталось</span>
+              <strong>${formatCurrency(client.remaining)}</strong>
+            </div>
+          </div>
         </div>
-        <div class="item-amount">${formatCurrency(client.remaining)}</div>
+        <div class="badge-row">
+          <span class="badge ${clientStatusClass}">${clientStatusText}</span>
+          <span class="badge">Всего ${formatCurrency(client.total)}</span>
+          <span class="badge good">Оплачено ${formatCurrency(client.paid)}</span>
+        </div>
+        <div class="item-footer">
+          <span class="meta-text">Разверни клиента, чтобы увидеть все заказы, историю оплат и быстро отметить поступление.</span>
+          <span class="toggle-hint">Развернуть клиента</span>
+        </div>
+      </summary>
+      <div class="client-group-body">
+        <div class="client-order-list">${ordersMarkup}</div>
       </div>
-      <div class="badge-row">
-        <span class="badge ${clientStatusClass}">${clientStatusText}</span>
-        <span class="badge">Всего ${formatCurrency(client.total)}</span>
-        <span class="badge good">Оплачено ${formatCurrency(client.paid)}</span>
-      </div>
-      <div class="client-order-list">${ordersMarkup}</div>
     `;
     refs.debtorsList.appendChild(article);
-  }
+  });
 }
 
 function handleViewTabClick(event) {
@@ -620,6 +674,29 @@ function handleClientSelectChange(event) {
   }
 }
 
+function handleDebtorToggle(event) {
+  const details = event.target;
+  if (!(details instanceof HTMLDetailsElement) || !details.classList.contains("client-group")) {
+    return;
+  }
+  const clientKey = String(details.dataset.clientKey || "");
+  if (!clientKey) {
+    return;
+  }
+  state.ui.openClients = {
+    ...(state.ui.openClients || {}),
+    [clientKey]: details.open,
+  };
+  persist();
+}
+
+function openWorkspaceDialog() {
+  if (!isSessionUnlocked()) {
+    return;
+  }
+  refs.workspaceDialog.showModal();
+}
+
 function sanitizePinField(event) {
   event.currentTarget.value = normalizePin(event.currentTarget.value);
 }
@@ -644,6 +721,9 @@ function lockSession() {
   sessionStorage.removeItem(SESSION_KEY);
   if (refs.securityDialog.open) {
     refs.securityDialog.close();
+  }
+  if (refs.workspaceDialog.open) {
+    refs.workspaceDialog.close();
   }
   refs.lockPinInput.value = "";
   refs.lockPinConfirmInput.value = "";
@@ -696,6 +776,9 @@ function syncSecurityUi() {
 function openSecurityDialog() {
   if (!isSessionUnlocked()) {
     return;
+  }
+  if (refs.workspaceDialog.open) {
+    refs.workspaceDialog.close();
   }
   refs.securityForm.reset();
   refs.securityCurrentPin.value = "";
@@ -940,19 +1023,24 @@ function handleDebtorSubmit(event) {
   }
   const rawClient = String(formData.get("client")).trim();
   const existingClient = state.debtors.find((item) => normalizeClientName(item.client) === normalizeClientName(rawClient));
-  state.debtors.unshift({
+  const debtor = {
     id: makeId(),
     client: existingClient ? existingClient.client : rawClient,
     title: String(formData.get("title")).trim(),
+    completedDate: String(formData.get("completedDate")),
     deadline: String(formData.get("deadline")),
     total,
     paid: 0,
     history: [],
+    orderEntryId: "",
     createdAt: new Date().toISOString(),
-  });
+  };
+  state.debtors.unshift(debtor);
+  syncDebtorOrderEntry(debtor);
   persist();
   event.currentTarget.reset();
   refs.clientSelect.value = "";
+  refs.debtorForm.completedDate.value = formatDateForInput(new Date());
   refs.debtorForm.deadline.value = formatDateForInput(new Date());
   render();
 }
@@ -1022,9 +1110,11 @@ function handleDebtorEditSubmit(event) {
   const existingClient = state.debtors.find((item) => item.id !== debtor.id && normalizeClientName(item.client) === normalizeClientName(rawClient));
   debtor.client = existingClient ? existingClient.client : rawClient;
   debtor.title = String(formData.get("title")).trim();
+  debtor.completedDate = String(formData.get("completedDate"));
   debtor.deadline = String(formData.get("deadline"));
   debtor.total = clampMoney(formData.get("total"));
   debtor.paid = Math.min(debtor.paid, debtor.total);
+  syncDebtorOrderEntry(debtor);
   persist();
   refs.debtorEditDialog.close();
   render();
@@ -1036,7 +1126,24 @@ function handleIncomeListClick(event) {
     return;
   }
   const { action, id } = button.dataset;
+  const entry = state.incomeEntries.find((item) => item.id === id);
+  if (!entry) {
+    return;
+  }
+  if (action === "open-linked-debtor" && entry.debtorId) {
+    state.ui.section = "receivables";
+    persist();
+    render();
+    openDebtorEditDialog(entry.debtorId);
+    return;
+  }
   if (action === "delete-income") {
+    if (entry.source !== "manual") {
+      if (entry.debtorId) {
+        openDebtorEditDialog(entry.debtorId);
+      }
+      return;
+    }
     if (!window.confirm("Удалить эту запись дохода?")) {
       return;
     }
@@ -1046,6 +1153,12 @@ function handleIncomeListClick(event) {
     return;
   }
   if (action === "edit-income") {
+    if (entry.source !== "manual") {
+      if (entry.debtorId) {
+        openDebtorEditDialog(entry.debtorId);
+      }
+      return;
+    }
     openIncomeEditDialog(id);
   }
 }
@@ -1087,6 +1200,10 @@ function handleDebtorListClick(event) {
     if (!window.confirm("Удалить этот заказ клиента?")) {
       return;
     }
+    const debtor = state.debtors.find((item) => item.id === id);
+    if (debtor) {
+      removeDebtorOrderEntry(debtor);
+    }
     state.debtors = state.debtors.filter((debtor) => debtor.id !== id);
     persist();
     render();
@@ -1117,6 +1234,48 @@ function applyDebtorPayment(debtor, { amount, date, ordersCount = 0, note = "" }
     note,
     source: "debtor-payment",
     debtorId: debtor.id,
+  });
+}
+
+function buildDebtorOrderNote(debtor) {
+  return `Выполнен заказ для ${debtor.client}: ${debtor.title}`;
+}
+
+function syncDebtorOrderEntry(debtor) {
+  const note = buildDebtorOrderNote(debtor);
+  const linkedEntry = state.incomeEntries.find((entry) => entry.id === debtor.orderEntryId)
+    || state.incomeEntries.find((entry) => entry.source === "debtor-order" && entry.debtorId === debtor.id);
+
+  if (linkedEntry) {
+    linkedEntry.date = debtor.completedDate;
+    linkedEntry.ordersCount = 1;
+    linkedEntry.amount = 0;
+    linkedEntry.note = note;
+    linkedEntry.source = "debtor-order";
+    linkedEntry.debtorId = debtor.id;
+    debtor.orderEntryId = linkedEntry.id;
+    return;
+  }
+
+  const orderEntry = {
+    id: makeId(),
+    date: debtor.completedDate,
+    ordersCount: 1,
+    amount: 0,
+    note,
+    source: "debtor-order",
+    debtorId: debtor.id,
+  };
+  debtor.orderEntryId = orderEntry.id;
+  state.incomeEntries.unshift(orderEntry);
+}
+
+function removeDebtorOrderEntry(debtor) {
+  state.incomeEntries = state.incomeEntries.filter((entry) => {
+    if (debtor.orderEntryId && entry.id === debtor.orderEntryId) {
+      return false;
+    }
+    return !(entry.source === "debtor-order" && entry.debtorId === debtor.id);
   });
 }
 
@@ -1155,6 +1314,7 @@ function openDebtorEditDialog(debtorId) {
   refs.debtorEditForm.debtorId.value = debtor.id;
   refs.debtorEditForm.client.value = debtor.client;
   refs.debtorEditForm.title.value = debtor.title;
+  refs.debtorEditForm.completedDate.value = debtor.completedDate || formatDateForInput(new Date());
   refs.debtorEditForm.deadline.value = debtor.deadline;
   refs.debtorEditForm.total.value = String(debtor.total);
   refs.debtorEditDialog.showModal();
@@ -1246,6 +1406,7 @@ function buildSliceMetrics(entries, previousEntries, debtors) {
   const previousOrders = sumField(previousEntries, "ordersCount");
   const activeDays = Object.keys(grouped).length;
   const previousActiveDays = Object.keys(previousGrouped).length;
+  const workingDays = Object.values(grouped).filter((item) => item.ordersCount > 0).length;
   const bestDay = Object.entries(grouped)
     .map(([date, item]) => ({ date, amount: item.amount }))
     .filter((item) => item.amount > 0)
@@ -1263,9 +1424,12 @@ function buildSliceMetrics(entries, previousEntries, debtors) {
     previousOrders,
     activeDays,
     previousActiveDays,
+    incomeDays,
     bestDay,
     delta,
     trendPercent,
+    workingDays,
+    averagePerOrder: totalOrders ? totalIncome / totalOrders : 0,
     averagePerIncomeDay: incomeDays ? totalIncome / incomeDays : 0,
     pendingDebts,
     openDebtors,
@@ -1314,6 +1478,7 @@ function groupEntriesByDate(entries) {
         ordersCount: 0,
         entries: [],
         hasDebtorPayments: false,
+        hasDebtorOrders: false,
       };
     }
 
@@ -1325,6 +1490,7 @@ function groupEntriesByDate(entries) {
       ordersCount: Math.max(0, Number(entry.ordersCount) || 0),
     });
     grouped[date].hasDebtorPayments = grouped[date].hasDebtorPayments || entry.source === "debtor-payment";
+    grouped[date].hasDebtorOrders = grouped[date].hasDebtorOrders || entry.source === "debtor-order";
     return grouped;
   }, {});
 }
@@ -1454,6 +1620,8 @@ function filterDebtorsByQuery(debtors, query) {
       formatCurrency(debtor.remaining),
       ...debtor.orders.flatMap((order) => [
         order.title,
+        order.completedDate,
+        formatDate(order.completedDate),
         order.deadline,
         formatDate(order.deadline),
         formatCurrency(order.total),
@@ -1513,7 +1681,7 @@ function exportCsvBundle() {
       entry.ordersCount,
       clampMoney(entry.amount),
       entry.note || "",
-      entry.source === "debtor-payment" ? "Оплата клиента" : "Ручная запись",
+      entry.source === "debtor-payment" ? "Оплата клиента" : entry.source === "debtor-order" ? "Заказ клиента" : "Ручная запись",
       "",
       "",
       "",
@@ -1586,14 +1754,22 @@ function seedDemoData() {
   const onyxSecondId = makeId();
   const hotelId = makeId();
   const coffeeId = makeId();
+  const onyxOrderEntryId = makeId();
+  const onyxSecondOrderEntryId = makeId();
+  const hotelOrderEntryId = makeId();
+  const coffeeOrderEntryId = makeId();
 
   state.incomeEntries = [
     { id: makeId(), date: buildDate(month, 3), ordersCount: 1, amount: 6800, note: "Лендинг для личного бренда", source: "manual" },
     { id: makeId(), date: buildDate(month, 6), ordersCount: 2, amount: 0, note: "Сделал две афиши, оплат еще не было", source: "manual" },
+    { id: onyxOrderEntryId, date: buildDate(month, 7), ordersCount: 1, amount: 0, note: "Выполнен заказ для Клуб ONYX: Афиша вечеринки «Старая кассета»", source: "debtor-order", debtorId: onyxId },
     { id: makeId(), date: buildDate(month, 8), ordersCount: 2, amount: 12400, note: "Две афиши и сторис-пакет", source: "manual" },
+    { id: onyxSecondOrderEntryId, date: buildDate(month, 9), ordersCount: 1, amount: 0, note: "Выполнен заказ для Клуб ONYX: Серия сторис для анонса вечеринки", source: "debtor-order", debtorId: onyxSecondId },
     { id: makeId(), date: buildDate(month, 10), ordersCount: 0, amount: 1500, note: "Частичная оплата от клуба ONYX", source: "debtor-payment", debtorId: onyxId },
     { id: makeId(), date: buildDate(month, 12), ordersCount: 0, amount: 3200, note: "Доплата по старому проекту без новых заказов", source: "manual" },
+    { id: hotelOrderEntryId, date: buildDate(month, 13), ordersCount: 1, amount: 0, note: "Выполнен заказ для Hotel Volga: Пакет рекламных сторис на открытие сезона", source: "debtor-order", debtorId: hotelId },
     { id: makeId(), date: buildDate(month, 14), ordersCount: 1, amount: 5200, note: "Обновление меню и баннеры", source: "manual" },
+    { id: coffeeOrderEntryId, date: buildDate(previous, 28), ordersCount: 1, amount: 0, note: "Выполнен заказ для Coffee Point: Меню-борд и промо-постер", source: "debtor-order", debtorId: coffeeId },
     { id: makeId(), date: buildDate(previous, 7), ordersCount: 1, amount: 4100, note: "Рекламный постер", source: "manual" },
     { id: makeId(), date: buildDate(previous, 21), ordersCount: 3, amount: 18900, note: "Серия визуалов для заведения", source: "manual" },
     { id: makeId(), date: buildDate(earlier, 18), ordersCount: 2, amount: 9600, note: "Фирменные обложки и баннеры", source: "manual" },
@@ -1605,40 +1781,48 @@ function seedDemoData() {
       id: onyxId,
       client: "Клуб ONYX",
       title: "Афиша вечеринки «Старая кассета»",
+      completedDate: buildDate(month, 7),
       deadline: buildDate(month, 27),
       total: 3000,
       paid: 1500,
       history: [{ id: makeId(), date: buildDate(month, 10), amount: 1500, note: "Первая часть" }],
+      orderEntryId: onyxOrderEntryId,
       createdAt: new Date().toISOString(),
     },
     {
       id: onyxSecondId,
       client: "Клуб ONYX",
       title: "Серия сторис для анонса вечеринки",
+      completedDate: buildDate(month, 9),
       deadline: buildDate(month, 29),
       total: 4200,
       paid: 0,
       history: [],
+      orderEntryId: onyxSecondOrderEntryId,
       createdAt: new Date().toISOString(),
     },
     {
       id: hotelId,
       client: "Hotel Volga",
       title: "Пакет рекламных сторис на открытие сезона",
+      completedDate: buildDate(month, 13),
       deadline: buildDate(month, 24),
       total: 8600,
       paid: 0,
       history: [],
+      orderEntryId: hotelOrderEntryId,
       createdAt: new Date().toISOString(),
     },
     {
       id: coffeeId,
       client: "Coffee Point",
       title: "Меню-борд и промо-постер",
+      completedDate: buildDate(previous, 28),
       deadline: buildDate(previous, 29),
       total: 5400,
       paid: 5400,
       history: [{ id: makeId(), date: buildDate(previous, 30), amount: 5400, note: "Полная оплата" }],
+      orderEntryId: coffeeOrderEntryId,
       createdAt: new Date().toISOString(),
     },
   ];
@@ -1650,6 +1834,7 @@ function seedDemoData() {
   };
   state.ui.view = "month";
   state.ui.section = "overview";
+  state.ui.openClients = {};
 
   refs.monthFilter.value = month;
   refs.rangeStart.value = earlier;
@@ -1726,6 +1911,7 @@ function normalizeState(source) {
     ui: {
       view: "month",
       section: "overview",
+      openClients: {},
     },
   };
 
@@ -1741,7 +1927,7 @@ function normalizeState(source) {
         ordersCount: Math.max(0, Number(entry.ordersCount) || 0),
         amount: clampMoney(entry.amount),
         note: String(entry.note || "").trim(),
-        source: entry.source === "debtor-payment" ? "debtor-payment" : "manual",
+        source: entry.source === "debtor-payment" ? "debtor-payment" : entry.source === "debtor-order" ? "debtor-order" : "manual",
         debtorId: entry.debtorId ? String(entry.debtorId) : "",
       }))
       .filter((entry) => entry.date);
@@ -1755,6 +1941,7 @@ function normalizeState(source) {
           id: debtor.id || makeId(),
           client: String(debtor.client || "").trim(),
           title: String(debtor.title || "").trim(),
+          completedDate: String(debtor.completedDate || debtor.createdAt?.slice(0, 10) || debtor.deadline || ""),
           deadline: String(debtor.deadline || ""),
           total,
           paid: Math.min(clampMoney(debtor.paid), total),
@@ -1766,6 +1953,7 @@ function normalizeState(source) {
                 note: String(item.note || "").trim(),
               }))
             : [],
+          orderEntryId: debtor.orderEntryId ? String(debtor.orderEntryId) : "",
           createdAt: debtor.createdAt || new Date().toISOString(),
         };
       })
@@ -1783,6 +1971,11 @@ function normalizeState(source) {
   if (source.ui && typeof source.ui === "object") {
     next.ui.view = ["month", "range", "year"].includes(source.ui.view) ? source.ui.view : "month";
     next.ui.section = ["overview", "income", "receivables", "analytics"].includes(source.ui.section) ? source.ui.section : "overview";
+    if (source.ui.openClients && typeof source.ui.openClients === "object") {
+      next.ui.openClients = Object.fromEntries(
+        Object.entries(source.ui.openClients).map(([key, value]) => [String(key), Boolean(value)]),
+      );
+    }
   }
 
   return next;
@@ -1947,6 +2140,9 @@ function describeDay(summary) {
 function getEntryKindLabel(entry) {
   if (entry.source === "debtor-payment") {
     return "Оплата клиента";
+  }
+  if (entry.source === "debtor-order") {
+    return "Заказ клиента";
   }
   if (entry.ordersCount > 0 && entry.amount > 0) {
     return "Заказы и поступление";

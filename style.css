@@ -136,6 +136,32 @@ body {
   align-items: start;
 }
 
+.brand-launcher {
+  width: 100%;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  appearance: none;
+}
+
+.brand-launcher:hover {
+  transform: translateY(-1px);
+}
+
+.brand-hint {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 14px;
+  padding: 9px 13px;
+  border-radius: 999px;
+  border: 1px solid rgba(0, 250, 154, 0.16);
+  background: rgba(0, 250, 154, 0.08);
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 600;
+}
+
 .brand-mark {
   width: 64px;
   height: 64px;
@@ -412,9 +438,14 @@ select:focus {
 .ghost-btn,
 .primary-btn,
 .chip-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   padding: 13px 16px;
   min-height: 48px;
   border-radius: 16px;
+  font-weight: 600;
   transition: transform 160ms ease, background 160ms ease, border-color 160ms ease;
 }
 
@@ -492,6 +523,32 @@ select:focus {
   justify-content: start;
   flex-wrap: wrap;
   margin-top: 16px;
+}
+
+.hero-highlights {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.hero-mini-card {
+  display: grid;
+  gap: 8px;
+  padding: 14px 16px;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.hero-mini-card span,
+.hero-mini-card small {
+  color: var(--muted);
+}
+
+.hero-mini-card strong {
+  font-size: 24px;
+  line-height: 1.05;
 }
 
 .pill {
@@ -613,7 +670,7 @@ select:focus {
 }
 
 .quick-grid {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   margin-top: 16px;
 }
 
@@ -637,6 +694,7 @@ select:focus {
   background: rgba(0, 250, 154, 0.1);
   color: var(--accent);
   font-size: 22px;
+  font-weight: 700;
 }
 
 .stack-grid,
@@ -769,6 +827,10 @@ select:focus {
 .sub-entry-side > span {
   font-weight: 700;
   color: var(--text);
+}
+
+.sub-entry-side .item-actions:empty {
+  display: none;
 }
 
 .item-amount {
@@ -927,6 +989,39 @@ select:focus {
   gap: 14px;
 }
 
+.client-group-toggle {
+  display: grid;
+  gap: 14px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.client-group-toggle::-webkit-details-marker {
+  display: none;
+}
+
+.client-group-toggle::marker {
+  display: none;
+}
+
+.client-group-body {
+  display: grid;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.client-summary-stats {
+  min-width: min(360px, 100%);
+}
+
+.client-group[open] .toggle-hint {
+  color: var(--accent);
+}
+
+.client-group[open] .toggle-hint::before {
+  content: "-";
+}
+
 .client-order-list {
   display: grid;
   gap: 12px;
@@ -975,6 +1070,16 @@ select:focus {
   width: min(460px, calc(100vw - 18px));
   padding: 18px;
   color: var(--text);
+}
+
+.workspace-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.workspace-actions .primary-btn {
+  grid-column: 1 / -1;
 }
 
 .modal::backdrop {
@@ -1168,6 +1273,11 @@ select:focus {
     gap: 16px;
   }
 
+  .hero-highlights {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
   .lock-card {
     width: min(430px, calc(100vw - 16px));
     padding: 22px 18px 20px;
@@ -1200,14 +1310,6 @@ select:focus {
     min-width: 0;
   }
 
-  .tools-card .side-actions {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .tools-card .primary-btn {
-    grid-column: 1 / -1;
-  }
-
   .hero-copy h2 {
     font-size: clamp(42px, 14vw, 56px);
   }
@@ -1220,6 +1322,11 @@ select:focus {
   .goal-card {
     padding: 16px;
     gap: 10px;
+  }
+
+  .hero-mini-card {
+    padding: 14px;
+    border-radius: 20px;
   }
 
   .goal-amount {
@@ -1322,6 +1429,10 @@ select:focus {
     line-height: 1;
   }
 
+  .workspace-actions {
+    grid-template-columns: 1fr;
+  }
+
   .modal[open] {
     position: fixed;
     left: 50%;
@@ -1347,12 +1458,22 @@ select:focus {
     align-items: flex-start;
   }
 
+  .brand-hint {
+    width: 100%;
+    justify-content: center;
+  }
+
   .hero-bars {
     grid-auto-columns: 44px;
   }
 
+  .hero-highlights {
+    grid-template-columns: 1fr;
+  }
+
   .stat-card strong,
-  .item-amount {
+  .item-amount,
+  .hero-mini-card strong {
     font-size: 20px;
   }
 

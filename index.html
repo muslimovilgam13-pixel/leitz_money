@@ -21,14 +21,15 @@
 
   <div class="app-shell">
     <aside class="sidebar">
-      <div class="brand-card">
+      <button id="brandLauncher" class="brand-card brand-launcher" type="button" aria-haspopup="dialog" aria-controls="workspaceDialog">
         <div class="brand-mark">L</div>
         <div>
           <p class="eyebrow">LEITZ FLOW</p>
           <h1>Деньги, заказы и клиенты без хаоса</h1>
           <p class="muted-text">Личный кабинет для дизайнера на фрилансе с учетом поступлений, заказов, оплат и аналитики.</p>
+          <span class="brand-hint">Управление и данные</span>
         </div>
-      </div>
+      </button>
 
       <nav class="section-tabs" id="sectionTabsDesktop">
         <button class="section-tab is-active" data-section="overview" type="button">
@@ -55,18 +56,6 @@
         <div class="side-period" id="sidebarLabel">Март 2026</div>
       </section>
 
-      <section class="side-card tools-card">
-        <p class="eyebrow">Данные</p>
-        <div class="side-actions">
-          <button id="exportJsonBtn" class="ghost-btn" type="button">Экспорт JSON</button>
-          <button id="exportCsvBtn" class="ghost-btn" type="button">Экспорт CSV</button>
-          <button id="importBtn" class="ghost-btn" type="button">Импорт</button>
-          <button id="securityBtn" class="ghost-btn" type="button">Безопасность</button>
-          <button id="seedDemoBtn" class="primary-btn" type="button">Демо-данные</button>
-          <input id="importInput" type="file" accept="application/json" hidden>
-        </div>
-        <p class="storage-note">Данные хранятся локально в этом браузере. Для переноса на другое устройство используй экспорт и импорт.</p>
-      </section>
     </aside>
 
     <div class="main-area">
@@ -107,6 +96,28 @@
               <span class="pill" id="selectionLabel">Март 2026</span>
               <span class="pill accent-pill" id="heroTrend">0%</span>
             </div>
+            <div class="hero-highlights">
+              <article class="hero-mini-card">
+                <span>Заказов</span>
+                <strong id="overviewOrdersMetric">0</strong>
+                <small>за выбранный период</small>
+              </article>
+              <article class="hero-mini-card">
+                <span>Дней с оплатой</span>
+                <strong id="overviewIncomeDaysMetric">0</strong>
+                <small>когда деньги реально пришли</small>
+              </article>
+              <article class="hero-mini-card">
+                <span>Клиентов в работе</span>
+                <strong id="overviewOpenClientsMetric">0</strong>
+                <small>кого нужно держать на контроле</small>
+              </article>
+              <article class="hero-mini-card">
+                <span>Ожидается</span>
+                <strong id="overviewPendingMetric">0 руб</strong>
+                <small>сколько еще должно поступить</small>
+              </article>
+            </div>
           </div>
 
           <div class="goal-card">
@@ -134,8 +145,8 @@
         <section class="panel stats-panel app-section" data-section="overview">
           <div class="panel-head">
             <div>
-              <p class="eyebrow">Показатели</p>
-              <h3>Быстрая сводка</h3>
+              <p class="eyebrow">Контроль</p>
+              <h3>Ключевые ориентиры</h3>
             </div>
           </div>
           <div class="stats-grid">
@@ -144,7 +155,11 @@
               <strong id="ordersCountMetric">0</strong>
             </article>
             <article class="stat-card">
-              <span>Среднее поступление</span>
+              <span>Рабочих дней</span>
+              <strong id="workingDaysMetric">0</strong>
+            </article>
+            <article class="stat-card">
+              <span>Средний чек</span>
               <strong id="averageDayMetric">0 руб</strong>
             </article>
             <article class="stat-card">
@@ -152,7 +167,7 @@
               <strong id="pendingDebtsMetric">0 руб</strong>
             </article>
             <article class="stat-card">
-              <span>Открытых клиентов</span>
+              <span>Клиентов на контроле</span>
               <strong id="openDebtorsMetric">0</strong>
             </article>
             <article class="stat-card">
@@ -170,24 +185,29 @@
           <div class="panel-head">
             <div>
               <p class="eyebrow">Быстрые действия</p>
-              <h3>Самые частые сценарии</h3>
+              <h3>Частые сценарии без лишних шагов</h3>
             </div>
           </div>
           <div class="quick-grid">
             <button class="quick-card" data-section-jump="income" type="button">
               <span class="quick-icon">+</span>
-              <strong>Записать день</strong>
-              <span>Отметить заказы, деньги или всё вместе</span>
+              <strong>Добавить запись</strong>
+              <span>Добавить заказы, поступление или оба события сразу</span>
             </button>
             <button class="quick-card" data-section-jump="receivables" type="button">
-              <span class="quick-icon">◎</span>
-              <strong>Добавить заказ</strong>
-              <span>Привязать новый заказ к клиенту</span>
+              <span class="quick-icon">К</span>
+              <strong>Добавить заказ клиента</strong>
+              <span>Поставить клиента в контроль и сразу записать выполненный заказ</span>
+            </button>
+            <button class="quick-card" data-section-jump="receivables" type="button">
+              <span class="quick-icon">С</span>
+              <strong>Отметить оплату</strong>
+              <span>Открыть клиентов, свернуть список и быстро отметить, кто оплатил</span>
             </button>
             <button class="quick-card" data-section-jump="analytics" type="button">
-              <span class="quick-icon">⌁</span>
-              <strong>Открыть аналитику</strong>
-              <span>Сравнить периоды и посмотреть год</span>
+              <span class="quick-icon">%</span>
+              <strong>Сравнить периоды</strong>
+              <span>Сравнить текущий период с предыдущим и посмотреть год целиком</span>
             </button>
           </div>
         </section>
@@ -252,7 +272,7 @@
             </div>
           </div>
           <form id="debtorForm" class="stack-form">
-            <p class="form-note">Если клиент уже есть, просто выбери его из списка и добавь новый заказ.</p>
+            <p class="form-note">Если клиент уже есть, просто выбери его из списка и добавь новый заказ. Заказ сразу будет записан в журнал на дату выполнения, а оплата попадет в доход отдельно, когда деньги действительно придут.</p>
             <label>
               <span>Выбрать существующего клиента</span>
               <select id="clientSelect">
@@ -269,7 +289,11 @@
               <input name="title" type="text" placeholder="Например: афиша вечеринки «Старая кассета»" required>
             </label>
             <label>
-              <span>Дедлайн</span>
+              <span>Дата выполнения</span>
+              <input name="completedDate" type="date" required>
+            </label>
+            <label>
+              <span>Когда ожидается оплата</span>
               <input name="deadline" type="date" required>
             </label>
             <label>
@@ -502,7 +526,11 @@
         <input name="title" type="text" required>
       </label>
       <label>
-        <span>Дедлайн</span>
+        <span>Дата выполнения</span>
+        <input name="completedDate" type="date" required>
+      </label>
+      <label>
+        <span>Когда ожидается оплата</span>
         <input name="deadline" type="date" required>
       </label>
       <label>
@@ -549,6 +577,30 @@
         <button id="lockNowBtn" class="ghost-btn" type="button">Заблокировать сейчас</button>
         <button class="ghost-btn" data-close-dialog="securityDialog" type="button">Отмена</button>
         <button class="primary-btn" type="submit">Сохранить</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="workspaceDialog" class="modal">
+    <form class="stack-form" method="dialog">
+      <div class="panel-head">
+        <div>
+          <p class="eyebrow">Управление</p>
+          <h3>Данные и сервисные действия</h3>
+        </div>
+      </div>
+      <p class="form-note">Здесь собраны экспорт, импорт, защита и демонстрационные данные. Основной экран остается чистым и сфокусированным на работе.</p>
+      <div class="workspace-actions">
+        <button id="exportJsonBtn" class="ghost-btn" type="button">Экспорт JSON</button>
+        <button id="exportCsvBtn" class="ghost-btn" type="button">Экспорт CSV</button>
+        <button id="importBtn" class="ghost-btn" type="button">Импорт данных</button>
+        <button id="securityBtn" class="ghost-btn" type="button">Безопасность</button>
+        <button id="seedDemoBtn" class="primary-btn" type="button">Загрузить демо</button>
+        <input id="importInput" type="file" accept="application/json" hidden>
+      </div>
+      <p class="storage-note">Данные хранятся локально в этом браузере. Для переноса на другое устройство используй экспорт и импорт.</p>
+      <div class="modal-actions">
+        <button class="ghost-btn" data-close-dialog="workspaceDialog" type="button">Закрыть</button>
       </div>
     </form>
   </dialog>
